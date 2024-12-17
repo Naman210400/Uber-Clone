@@ -5,6 +5,7 @@ const {
 } = require("../helpers/response.helper");
 const userModel = require("../models/user.model");
 const UserService = require("../services/user.service");
+const blacklistTokenModel = require("../models/blacklistToken.model");
 
 exports.createUser = async (req, res) => {
   const errors = validationResult(req);
@@ -15,6 +16,12 @@ exports.createUser = async (req, res) => {
 
   const { fullname, email, password } = req.body;
   const { firstname, lastname } = fullname;
+
+  const isUserAlready = await userModel.findOne({ email });
+
+  if (isUserAlready) {
+    return SendFailureResponse(res, 400, "User already exist");
+  }
 
   const hashPassword = await userModel.hashPassword(password);
   const user = await UserService.register({
@@ -63,4 +70,14 @@ exports.userProfile = async (req, res) => {
     req.user,
     "User profile fetched successfully"
   );
+};
+
+exports.logoutUser = async (req, res) => {
+  res.clearCookie("token");
+
+  const token = req.cookies.token || req.headers.authorization.split(" ")[1];
+
+  await blacklistTokenModel.create({ token });
+
+  return SendSuccessResponse(res, 200, null, "User logged out successfully");
 };

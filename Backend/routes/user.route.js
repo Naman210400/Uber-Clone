@@ -31,5 +31,6 @@ userRouter.post(
 );
 
 userRouter.get("/", authUser, UserController.userProfile);
+userRouter.get("/logout", authUser, UserController.logoutUser);
 
 module.exports = userRouter;

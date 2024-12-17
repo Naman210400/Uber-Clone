@@ -1,4 +1,5 @@
 const { SendFailureResponse } = require("../helpers/response.helper");
+const blacklistTokenModel = require("../models/blacklistToken.model");
 const userModel = require("../models/user.model");
 const { HTTP_STATUS_MESSAGE } = require("../utils/constant");
 const jwt = require("jsonwebtoken");
@@ -8,6 +9,12 @@ module.exports.authUser = async (req, res, next) => {
     req?.cookies?.token || req?.headers?.authorization?.split(" ")[1];
 
   if (!token) {
+    return SendFailureResponse(res, 400, HTTP_STATUS_MESSAGE.UNAUTHORIZED);
+  }
+
+  const isBlacklisted = await blacklistTokenModel.findOne({ token: token });
+
+  if (isBlacklisted) {
     return SendFailureResponse(res, 400, HTTP_STATUS_MESSAGE.UNAUTHORIZED);
   }
 
