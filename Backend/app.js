@@ -5,7 +5,8 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const connectToDb = require("./db/db");
-const userRouter = require("./routes/user.route");
+const userRouter = require("./routes/user.routes");
+const captainRouter = require("./routes/captain.routes");
 
 const app = express();
 
@@ -21,5 +22,6 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/users", userRouter);
+app.use("/captains", captainRouter);
 
 module.exports = app;
