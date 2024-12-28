@@ -1,20 +1,80 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { USER_SIGNUP_VALUES } from "../assets/utils/defaultValues";
+import React, { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { API_MODELS, USER_SIGNUP_VALUES } from "../assets/utils/defaultValues";
+import {
+  checkValidEmail,
+  checkValidPassword,
+} from "../assets/utils/validation";
+import { UserDataContext } from "../context/UserContext";
+import apiInstance from "../assets/utils/axiosInstance";
 
 const UserSignup = () => {
   const [signupDetails, setSignupDetails] = useState(USER_SIGNUP_VALUES);
+  const [errors, setErrors] = useState({});
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const { setUser } = useContext(UserDataContext);
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setSignupDetails({ ...signupDetails, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const validation = () => {
+    let err = {};
+    let details = signupDetails;
+    for (let key in details) {
+      if (!details[key]) {
+        err[key + "_err"] = "Please enter " + key.replace(/_/g, " ");
+      } else if (key === "email") {
+        if (!checkValidEmail(details[key])) {
+          err[key + "_err"] = "Email is not valid";
+        }
+      } else if (key === "password") {
+        if (!checkValidPassword(details[key])) {
+          err[key + "_err"] = "Password is not strong enough";
+        }
+      }
+    }
+    console.log(err);
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log(signupDetails);
-    setSignupDetails(USER_SIGNUP_VALUES);
+
+    if (validation()) {
+      try {
+        setSubmitting(true);
+        const details = {
+          email: signupDetails?.email,
+          password: signupDetails?.password,
+          fullname: {
+            firstname: signupDetails?.firstName,
+            lastname: signupDetails?.lastName,
+          },
+        };
+        await apiInstance
+          .post(`/${API_MODELS.USERS}/register`, details)
+          .then((response) => {
+            if (response?.data?.data) {
+              const data = response?.data?.data;
+              setSignupDetails(USER_SIGNUP_VALUES);
+              setUser(data?.user);
+              localStorage.setItem("UBER_USER_TOKEN", data?.token);
+              setSubmitting(false);
+              navigate("/home");
+            }
+          });
+      } catch (error) {
+        console.error(error);
+        setSubmitting(false);
+      }
+    }
   };
 
   return (
@@ -70,8 +130,9 @@ const UserSignup = () => {
           <button
             className="bg-[#111] text-white font-semibold mb-3 rounded px-4 py-2 w-full text-lg placeholder:text-base"
             type="submit"
+            disabled={submitting}
           >
-            Create Account
+            {submitting ? "Creating" : "Create Account"}
           </button>
           <p className="text-center">
             Already have a account?

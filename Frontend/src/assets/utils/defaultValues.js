@@ -24,3 +24,7 @@ export const USER_PROFILE_VALUES = {
     lastName: "",
   },
 };
+
+export const API_MODELS = {
+  USERS: "users",
+};

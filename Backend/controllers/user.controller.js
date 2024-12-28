@@ -34,7 +34,12 @@ exports.createUser = async (req, res) => {
   const token = await user.generateAuthToken();
   res.cookie("token", token);
 
-  return SendSuccessResponse(res, 201, token, "User successfully registered");
+  return SendSuccessResponse(
+    res,
+    201,
+    { user, token },
+    "User successfully registered"
+  );
 };
 
 exports.loginUser = async (req, res) => {
@@ -60,7 +65,12 @@ exports.loginUser = async (req, res) => {
   const token = await user.generateAuthToken();
   res.cookie("token", token);
 
-  return SendSuccessResponse(res, 200, token, "User successfully logged in");
+  return SendSuccessResponse(
+    res,
+    200,
+    { user, token },
+    "User successfully logged in"
+  );
 };
 
 exports.userProfile = async (req, res) => {
