@@ -103,7 +103,7 @@ const UserLogin = () => {
             type="submit"
             disabled={submitting}
           >
-            {submitting ? "Logging in" : "Log in"}
+            {submitting ? "Logging in..." : "Log in"}
           </button>
           <p className="text-center">
             New here?

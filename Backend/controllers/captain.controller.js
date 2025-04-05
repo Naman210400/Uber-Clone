@@ -42,7 +42,7 @@ exports.createCaptain = async (req, res) => {
   return SendSuccessResponse(
     res,
     201,
-    token,
+    { captain, token },
     "Captain successfully registered"
   );
 };
@@ -70,7 +70,12 @@ exports.loginCaptain = async (req, res) => {
   const token = await captain.generateAuthToken();
   res.cookie("token", token);
 
-  return SendSuccessResponse(res, 200, token, "Captain successfully logged in");
+  return SendSuccessResponse(
+    res,
+    200,
+    { captain, token },
+    "Captain successfully logged in"
+  );
 };
 
 exports.captainProfile = async (req, res) => {

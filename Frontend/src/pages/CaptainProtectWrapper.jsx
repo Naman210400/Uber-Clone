@@ -1,22 +1,21 @@
 import React, { useContext, useEffect, useState } from "react";
 import { UserDataContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
-import { API_MODELS } from "../assets/utils/defaultValues";
-import apiInstance from "../assets/utils/axiosInstance";
 import { SpinningLoader } from "../assets/utils/icons";
-
-const UserProtectWrapper = ({ children }) => {
-  const token = localStorage.getItem("UBER_USER_TOKEN");
+import apiInstance from "../assets/utils/axiosInstance";
+import { API_MODELS } from "../assets/utils/defaultValues";
+import { CaptainDataContext } from "../context/CaptainContext";
+const CaptainProtectWrapper = ({ children }) => {
+  const token = localStorage.getItem("UBER_CAPTAIN_TOKEN");
+  const [isLoading, setIsLoading] = useState(true);
+  const { setCaptain } = useContext(CaptainDataContext);
 
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-
-  const { setUser } = useContext(UserDataContext);
 
   useEffect(() => {
     if (token) {
       apiInstance
-        .get(`/${API_MODELS.USERS}`, {
+        .get(`/${API_MODELS.CAPTAINS}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -24,14 +23,14 @@ const UserProtectWrapper = ({ children }) => {
         .then((response) => {
           const data = response?.data?.data;
           setIsLoading(false);
-          setUser(data);
+          setCaptain(data);
         })
         .catch(() => {
-          localStorage.removeItem("UBER_USER_TOKEN");
-          navigate("/login");
+          localStorage.removeItem("UBER_CAPTAIN_TOKEN");
+          navigate("/captain-login");
         });
     } else {
-      navigate("/login");
+      navigate("/captain-login");
     }
   }, [token]);
 
@@ -49,4 +48,4 @@ const UserProtectWrapper = ({ children }) => {
   return <>{children}</>;
 };
 
-export default UserProtectWrapper;
+export default CaptainProtectWrapper;

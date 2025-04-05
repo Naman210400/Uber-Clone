@@ -1,20 +1,71 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { LOGIN_VALUES } from "../assets/utils/defaultValues";
+import React, { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { API_MODELS, LOGIN_VALUES } from "../assets/utils/defaultValues";
+import { CaptainDataContext } from "../context/CaptainContext";
+import {
+  checkValidEmail,
+  checkValidPassword,
+} from "../assets/utils/validation";
+import apiInstance from "../assets/utils/axiosInstance";
 
 const CaptainLogin = () => {
   const [loginDetails, setLoginDetails] = useState(LOGIN_VALUES);
+  const [errors, setErrors] = useState({});
 
+  const [submitting, setSubmitting] = useState(false);
+
+  const { setCaptain } = useContext(CaptainDataContext);
+
+  const navigate = useNavigate();
   const handleChange = (e) => {
     const { name, value } = e.target;
     setLoginDetails({ ...loginDetails, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const validation = () => {
+    let err = {};
+    let details = loginDetails;
+    for (let key in details) {
+      if (!details[key]) {
+        err[key + "_err"] = "Please enter " + key.replace(/_/g, " ");
+      } else if (key === "email") {
+        if (!checkValidEmail(details[key])) {
+          err[key + "_err"] = "Email is not valid";
+        }
+      } else if (key === "password") {
+        if (!checkValidPassword(details[key])) {
+          err[key + "_err"] = "Password is not strong enough";
+        }
+      }
+    }
+    console.log(err);
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log(loginDetails);
-    setLoginDetails(LOGIN_VALUES);
+
+    if (validation()) {
+      try {
+        setSubmitting(true);
+        await apiInstance
+          .post(`/${API_MODELS.CAPTAINS}/login`, loginDetails)
+          .then((response) => {
+            if (response?.data?.data) {
+              const data = response?.data?.data;
+              setLoginDetails(LOGIN_VALUES);
+              setCaptain(data?.captain);
+              localStorage.setItem("UBER_CAPTAIN_TOKEN", data?.token);
+              setSubmitting(false);
+              navigate("/captain-home");
+            }
+          });
+      } catch (error) {
+        console.error(error);
+        setSubmitting(false);
+      }
+    }
   };
 
   return (
@@ -49,8 +100,9 @@ const CaptainLogin = () => {
           <button
             className="bg-[#111] text-white font-semibold mb-3 rounded px-4 py-2 w-full text-lg placeholder:text-base"
             type="submit"
+            disabled={submitting}
           >
-            Login
+            {submitting ? "Logging in..." : "Log in"}
           </button>
           <p className="text-center">
             Join a fleet?

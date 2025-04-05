@@ -132,7 +132,7 @@ const UserSignup = () => {
             type="submit"
             disabled={submitting}
           >
-            {submitting ? "Creating" : "Create Account"}
+            {submitting ? "Creating..." : "Create Account"}
           </button>
           <p className="text-center">
             Already have a account?
