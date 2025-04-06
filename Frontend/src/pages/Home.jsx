@@ -2,12 +2,12 @@ import React, { useRef, useState } from "react";
 import { BOOK_RIDE_VALUES, USER_MODALS } from "../assets/utils/defaultValues";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import "remixicon/fonts/remixicon.css";
 import LocationSearch from "../components/LocationSearch";
 import VehiclePanel from "../components/VehiclePanel";
 import ConfirmedRide from "../components/ConfirmedRide";
 import LookingForDriver from "../components/LookingForDriver";
 import WaitingForDriver from "../components/WaitingForDriver";
+import "remixicon/fonts/remixicon.css";
 
 const Home = () => {
   const [book, setBook] = useState(BOOK_RIDE_VALUES);
