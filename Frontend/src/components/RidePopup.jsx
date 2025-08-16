@@ -1,6 +1,6 @@
 import { CAPTAIN_MODALS } from "../assets/utils/defaultValues";
 
-const RidePopup = ({ handleActiveModal, handleCloseModal }) => {
+const RidePopup = ({ handleActiveModal, newRide, handleCloseModal }) => {
   return (
     <div>
       <h5
@@ -17,7 +17,10 @@ const RidePopup = ({ handleActiveModal, handleCloseModal }) => {
             src="https://i.pinimg.com/236x/cb/33/d8/cb33d80fe655e221ae05f41c8edd0cdb.jpg"
             alt=""
           />
-          <h2 className="text-lg font-medium">Sam</h2>
+          <h2 className="text-lg font-medium">
+            {newRide.userId.fullname.firstname}{" "}
+            {newRide.userId.fullname.lastname}
+          </h2>
         </div>
         <h5 className="text-lg font-semibold">2.2 KM</h5>
       </div>
@@ -26,21 +29,21 @@ const RidePopup = ({ handleActiveModal, handleCloseModal }) => {
           <div className="flex items-center gap-5 p-3 border-b-2">
             <i className="text-lg ri-map-pin-user-fill" />
             <div>
-              <h3 className="text-lg font-medium">562/11-A</h3>
-              <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p>
+              <h3 className="text-lg font-medium">{newRide.pickupLocation}</h3>
+              {/* <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p> */}
             </div>
           </div>
           <div className="flex items-center gap-5 p-3 border-b-2">
             <i className="text-lg ri-map-pin-2-fill" />
             <div>
-              <h3 className="text-lg font-medium">562/11-A</h3>
-              <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p>
+              <h3 className="text-lg font-medium">{newRide.dropOffLocation}</h3>
+              {/* <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p> */}
             </div>
           </div>
           <div className="flex items-center gap-5 p-3 ">
             <i className="text-lg ri-currency-line" />
             <div>
-              <h3 className="text-lg font-medium">$12</h3>
+              <h3 className="text-lg font-medium">₹{newRide.fare}</h3>
               <p className="text-sm -mt-1 text-gray-600">Cash</p>
             </div>
           </div>

@@ -31,18 +31,21 @@ exports.getFare = async ({ origin, destination }) => {
   };
 
   const fare = {
-    auto:
+    auto: Math.round(
       baseFare.auto +
-      (distanceTime.distance.value / 1000) * farePerKm.auto +
-      (distanceTime.duration.value / 60) * farePerMin.auto,
-    car:
+        (distanceTime.distance.value / 1000) * farePerKm.auto +
+        (distanceTime.duration.value / 60) * farePerMin.auto
+    ),
+    car: Math.round(
       baseFare.car +
-      (distanceTime.distance.value / 1000) * farePerKm.car +
-      (distanceTime.duration.value / 60) * farePerMin.car,
-    motorcycle:
+        (distanceTime.distance.value / 1000) * farePerKm.car +
+        (distanceTime.duration.value / 60) * farePerMin.car
+    ),
+    motorcycle: Math.round(
       baseFare.motorCycle +
-      (distanceTime.distance.value / 1000) * farePerKm.motorCycle +
-      (distanceTime.duration.value / 60) * farePerMin.motorCycle,
+        (distanceTime.distance.value / 1000) * farePerKm.motorCycle +
+        (distanceTime.duration.value / 60) * farePerMin.motorCycle
+    ),
   };
 
   return fare;
@@ -82,4 +85,23 @@ exports.createRide = async ({
   });
 
   return ride;
+};
+
+exports.acceptRide = async ({ rideId, captainId, otp }) => {
+  if (!rideId || !captainId || !otp) {
+    throw new Error("Ride ID, captain ID, and OTP are required");
+  }
+  const ride = await rideModel.findById(rideId).select("+otp");
+  if (!ride) {
+    throw new Error("Ride not found");
+  }
+  if (ride.status !== "pending") {
+    throw new Error("Ride already accepted or completed");
+  }
+  if (ride.otp !== otp) {
+    throw new Error("Invalid OTP");
+  }
+  ride.status = "accepted";
+  ride.captainId = captainId;
+  return await ride.save();
 };

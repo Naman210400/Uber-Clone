@@ -1,12 +1,20 @@
-import React, { useRef, useState } from "react";
-import { BOOK_RIDE_VALUES, USER_MODALS } from "../assets/utils/defaultValues";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import LocationSearch from "../components/LocationSearch";
-import VehiclePanel from "../components/VehiclePanel";
+import { useContext, useEffect, useRef, useState } from "react";
+import {
+  API_MODELS,
+  BOOK_RIDE_VALUES,
+  USER_MODALS,
+} from "../assets/utils/defaultValues";
 import ConfirmedRide from "../components/ConfirmedRide";
+import LocationSearch from "../components/LocationSearch";
 import LookingForDriver from "../components/LookingForDriver";
+import VehiclePanel from "../components/VehiclePanel";
 import WaitingForDriver from "../components/WaitingForDriver";
+import apiInstance from "../assets/utils/axiosInstance";
+import { SocketContext } from "../context/SocketContext";
+import { UserDataContext } from "../context/UserContext";
+import { displayErrorToast } from "../assets/utils/validation";
 
 const Home = () => {
   const [book, setBook] = useState(BOOK_RIDE_VALUES);
@@ -16,6 +24,15 @@ const Home = () => {
   const lookingForDriverRef = useRef();
   const waitingForDriverRef = useRef();
   const [activeModal, setActiveModal] = useState(USER_MODALS.NONE);
+  const [activeField, setActiveField] = useState(null);
+  const [acceptedRide, setAcceptedRide] = useState(null);
+
+  const { user } = useContext(UserDataContext);
+  const { socket } = useContext(SocketContext);
+
+  useEffect(() => {
+    socket.emit("join", { role: "user", userId: user._id });
+  }, []);
 
   useGSAP(
     function () {
@@ -80,10 +97,83 @@ const Home = () => {
     setActiveModal(USER_MODALS.NONE);
   };
 
-  const submitHandler = (e) => {
+  const handleInputFocus = (field) => {
+    setActiveField(field);
+    setActiveModal(USER_MODALS.LOCATION);
+  };
+
+  const setFieldValue = (value) => {
+    setBook({ ...book, [activeField]: value });
+  };
+
+  const submitHandler = async (e) => {
     e.preventDefault();
     console.log("Form submitted");
+
+    await apiInstance
+      .get(
+        `/${API_MODELS.RIDES}/get-fares?pickupLocation=${encodeURIComponent(
+          book.from
+        )}&dropOffLocation=${encodeURIComponent(book.to)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("UBER_USER_TOKEN")}`,
+          },
+        }
+      )
+      .then((response) => {
+        if (response?.data?.data) {
+          const fares = response.data.data;
+          setBook({
+            ...book,
+            fare: fares,
+          });
+          handleActiveModal(USER_MODALS.VEHICLES);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching fares:", error);
+      });
   };
+  const handleSelectVehicle = (vehicleType) => {
+    setBook({ ...book, vehicleType });
+    handleActiveModal(USER_MODALS.CONFIRM_RIDE);
+  };
+
+  const handleCreateRide = async () => {
+    const rideDetails = {
+      pickupLocation: book.from,
+      dropOffLocation: book.to,
+      vehicleType: book.vehicleType || "car",
+    };
+    try {
+      const response = await apiInstance.post(
+        `/${API_MODELS.RIDES}/create`,
+        rideDetails,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("UBER_USER_TOKEN")}`,
+          },
+        }
+      );
+      if (response?.data?.data) {
+        const ride = response.data.data;
+        console.log("Ride created successfully:", ride);
+        handleActiveModal(USER_MODALS.LOOKING_FOR_DRIVER);
+      }
+    } catch (error) {
+      console.error("Error creating ride:", error);
+      displayErrorToast(
+        error?.response?.data?.message || "Failed to create ride"
+      );
+    }
+  };
+
+  socket.on("ride-accepted", (ride) => {
+    console.log("Ride accepted:", ride);
+    setAcceptedRide(ride);
+    setActiveModal(USER_MODALS.WAITING_FOR_DRIVER);
+  });
   return (
     <div className="h-screen relative overflow-hidden">
       <img
@@ -99,7 +189,7 @@ const Home = () => {
         />
       </div>
       <div className="flex flex-col justify-end absolute top-0 w-full h-screen">
-        <div className="h-[30%] p-5 bg-white relative">
+        <div className="h-[50%] p-5 bg-white relative">
           {activeModal === USER_MODALS.LOCATION && (
             <h5
               className="absolute right-2 top-6 text-2xl"
@@ -118,7 +208,7 @@ const Home = () => {
               name="from"
               onChange={handleChange}
               value={book.from}
-              onClick={() => handleActiveModal(USER_MODALS.LOCATION)}
+              onFocus={() => handleInputFocus("from")}
             />
             <input
               type="text"
@@ -127,49 +217,63 @@ const Home = () => {
               name="to"
               onChange={handleChange}
               value={book.to}
-              onClick={() => handleActiveModal(USER_MODALS.LOCATION)}
+              onFocus={() => handleInputFocus("to")}
             />
+            <button
+              className={`bg-black text-white font-semibold mt-5 rounded-lg px-4 py-2 w-full text-base placeholder:text-base
+    ${!book.from || !book.to ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={!book.from || !book.to}
+              type="submit"
+            >
+              Find a trip
+            </button>
           </form>
+          <div className="bg-white">
+            <LocationSearch
+              activeField={activeField}
+              fieldValue={book[activeField]}
+              setFieldValue={setFieldValue}
+              activeModal={activeModal}
+            />
+          </div>
         </div>
-        <div className="h-0 bg-white" ref={modalRef}>
-          <LocationSearch handleActiveModal={handleActiveModal} />
+        <div
+          ref={vehiclePanelRef}
+          className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-10 pt-12"
+        >
+          <VehiclePanel
+            handleSelectVehicle={handleSelectVehicle}
+            handleCloseModal={handleCloseModal}
+            book={book}
+          />
         </div>
-      </div>
-      <div
-        ref={vehiclePanelRef}
-        className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-10 pt-12"
-      >
-        <VehiclePanel
-          handleActiveModal={handleActiveModal}
-          handleCloseModal={handleCloseModal}
-        />
-      </div>
-      <div
-        ref={confirmRideRef}
-        className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-6 pt-12"
-      >
-        <ConfirmedRide
-          handleActiveModal={handleActiveModal}
-          handleCloseModal={handleCloseModal}
-        />
-      </div>
-      <div
-        ref={lookingForDriverRef}
-        className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-6 pt-12"
-      >
-        <LookingForDriver
-          handleActiveModal={handleActiveModal}
-          handleCloseModal={handleCloseModal}
-        />
-      </div>
-      <div
-        ref={waitingForDriverRef}
-        className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-6 pt-12"
-      >
-        <WaitingForDriver
-          handleActiveModal={handleActiveModal}
-          handleCloseModal={handleCloseModal}
-        />
+        <div
+          ref={confirmRideRef}
+          className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-6 pt-12"
+        >
+          <ConfirmedRide
+            handleCreateRide={handleCreateRide}
+            book={book}
+            handleCloseModal={handleCloseModal}
+          />
+        </div>
+        <div
+          ref={lookingForDriverRef}
+          className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-6 pt-12"
+        >
+          <LookingForDriver book={book} handleCloseModal={handleCloseModal} />
+        </div>
+        <div
+          ref={waitingForDriverRef}
+          className="fixed w-full z-10 bg-white translate-y-full bottom-0 px-3 py-6 pt-12"
+        >
+          {activeModal === USER_MODALS.WAITING_FOR_DRIVER && (
+            <WaitingForDriver
+              handleCloseModal={handleCloseModal}
+              acceptedRide={acceptedRide}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

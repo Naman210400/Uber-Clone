@@ -34,11 +34,19 @@ export const USER_PROFILE_VALUES = {
 export const API_MODELS = {
   USERS: "users",
   CAPTAINS: "captains",
+  MAPS: "maps",
+  RIDES: "rides",
 };
 
 export const BOOK_RIDE_VALUES = {
   from: "",
   to: "",
+  vehicleType: "",
+  fare: {
+    car: 0,
+    motorcycle: 0,
+    auto: 0,
+  },
 };
 
 export const USER_MODALS = {

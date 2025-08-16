@@ -1,3 +1,5 @@
+import toast from "react-hot-toast";
+
 export const checkValidName = (name, allowSpace = true) => {
   const pattern = allowSpace ? /^[a-zA-Z ]*$/ : /^[a-zA-Z]*$/;
   return pattern.test(name);

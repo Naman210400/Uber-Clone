@@ -1,16 +1,49 @@
 import { useGSAP } from "@gsap/react";
-import { useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CAPTAIN_MODALS } from "../assets/utils/defaultValues";
+import { API_MODELS, CAPTAIN_MODALS } from "../assets/utils/defaultValues";
 import CaptainDetails from "../components/CaptainDetails";
 import RidePopup from "../components/RidePopup";
 import gsap from "gsap";
 import CaptainConfirmedRide from "../components/CaptainConfirmRide";
+import { SocketContext } from "../context/SocketContext";
+import { CaptainDataContext } from "../context/CaptainContext";
+import { displayErrorToast } from "../assets/utils/validation";
+import apiInstance from "../assets/utils/axiosInstance";
 
 const CaptainHome = () => {
   const ridePopUpRef = useRef();
   const confirmRideRef = useRef();
-  const [activeModal, setActiveModal] = useState(CAPTAIN_MODALS.NEW_RIDE);
+  const [activeModal, setActiveModal] = useState(CAPTAIN_MODALS.NONE);
+
+  const { captain } = useContext(CaptainDataContext);
+  const { socket } = useContext(SocketContext);
+  const [newRide, setNewRide] = useState(null);
+
+  useEffect(() => {
+    socket.emit("join", { role: "captain", userId: captain._id });
+
+    const updateLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude, longitude } = position.coords;
+          socket.emit("update-captain-location", {
+            captainId: captain._id,
+            location: { lat: latitude, lng: longitude },
+          });
+        });
+      }
+    };
+
+    const locationInterval = setInterval(updateLocation, 5000);
+    return () => clearInterval(locationInterval);
+  }, []);
+
+  socket.on("new-ride", (ride) => {
+    console.log("New ride received:", ride);
+    setNewRide(ride);
+    setActiveModal(CAPTAIN_MODALS.NEW_RIDE);
+  });
 
   useGSAP(
     function () {
@@ -48,6 +81,32 @@ const CaptainHome = () => {
     setActiveModal(CAPTAIN_MODALS.NONE);
   };
 
+  const handleAcceptRide = async (rideId, otp) => {
+    try {
+      const response = await apiInstance.post(
+        `/${API_MODELS.RIDES}/accept-ride/${rideId}`,
+        { otp },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(
+              "UBER_CAPTAIN_TOKEN"
+            )}`,
+          },
+        }
+      );
+      if (response?.data?.data) {
+        const ride = response.data.data;
+        console.log("Ride accepted successfully:", ride);
+        handleActiveModal(CAPTAIN_MODALS.CONFIRM_RIDE);
+      }
+    } catch (error) {
+      console.error("Error accepting ride:", error);
+      displayErrorToast(
+        error?.response?.data?.message || "Failed to accept ride"
+      );
+    }
+  };
+
   return (
     <div className="h-screen">
       <div className="fixed p-6 top-0 flex items-center justify-between w-screen">
@@ -77,19 +136,25 @@ const CaptainHome = () => {
         className="fixed w-full z-10 bg-white px-3 py-10 pt-12 bottom-0 translate-y-full"
         ref={ridePopUpRef}
       >
-        <RidePopup
-          handleActiveModal={handleActiveModal}
-          handleCloseModal={handleCloseModal}
-        />
+        {activeModal === CAPTAIN_MODALS.NEW_RIDE && (
+          <RidePopup
+            newRide={newRide}
+            handleActiveModal={handleActiveModal}
+            handleCloseModal={handleCloseModal}
+          />
+        )}
       </div>
       <div
         className="fixed w-full h-full z-10 bg-white px-3 py-10 pt-12 bottom-0 translate-y-full"
         ref={confirmRideRef}
       >
-        <CaptainConfirmedRide
-          handleActiveModal={handleActiveModal}
-          handleCloseModal={handleCloseModal}
-        />
+        {activeModal === CAPTAIN_MODALS.CONFIRM_RIDE && (
+          <CaptainConfirmedRide
+            newRide={newRide}
+            handleAcceptRide={handleAcceptRide}
+            handleCloseModal={handleCloseModal}
+          />
+        )}
       </div>
     </div>
   );
