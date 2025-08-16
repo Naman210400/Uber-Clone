@@ -1,7 +1,53 @@
-import React from "react";
+import { useGSAP } from "@gsap/react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { CAPTAIN_MODALS } from "../assets/utils/defaultValues";
+import CaptainDetails from "../components/CaptainDetails";
+import RidePopup from "../components/RidePopup";
+import gsap from "gsap";
+import CaptainConfirmedRide from "../components/CaptainConfirmRide";
 
 const CaptainHome = () => {
+  const ridePopUpRef = useRef();
+  const confirmRideRef = useRef();
+  const [activeModal, setActiveModal] = useState(CAPTAIN_MODALS.NEW_RIDE);
+
+  useGSAP(
+    function () {
+      const animations = [
+        {
+          ref: ridePopUpRef,
+          props: {
+            transform: `translateY(${
+              activeModal === CAPTAIN_MODALS.NEW_RIDE ? "0" : "100%"
+            })`,
+          },
+        },
+        {
+          ref: confirmRideRef,
+          props: {
+            transform: `translateY(${
+              activeModal === CAPTAIN_MODALS.CONFIRM_RIDE ? "0" : "100%"
+            })`,
+          },
+        },
+      ];
+
+      animations.forEach(({ ref, props }) => {
+        gsap.to(ref.current, props);
+      });
+    },
+    [activeModal]
+  );
+
+  const handleActiveModal = (modal) => {
+    setActiveModal(modal);
+  };
+
+  const handleCloseModal = () => {
+    setActiveModal(CAPTAIN_MODALS.NONE);
+  };
+
   return (
     <div className="h-screen">
       <div className="fixed p-6 top-0 flex items-center justify-between w-screen">
@@ -11,7 +57,7 @@ const CaptainHome = () => {
           alt=""
         />
         <Link
-          to="/home"
+          to="/captain-home"
           className="h-10 w-10 bg-white flex items-center justify-center rounded-full"
         >
           <i className="text-lg font-medium ri-logout-box-r-line" />
@@ -25,37 +71,25 @@ const CaptainHome = () => {
         />
       </div>
       <div className="h-2/5 p-6">
-        <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-md">
-          <div className="flex items-center justify-start gap-4">
-            <img
-              className="h-10 w-10 rounded-full object-cover"
-              src="https://i.pinimg.com/236x/cb/33/d8/cb33d80fe655e221ae05f41c8edd0cdb.jpg"
-              alt=""
-            />
-            <h4 className="text-lg font-medium">Captain Name</h4>
-          </div>
-          <div>
-            <h4 className="text-xl font-semibold">$269</h4>
-            <p className="text-sm text-gray-600">Earned</p>
-          </div>
-        </div>
-        <div className="flex items-start justify-evenly gap-5 bg-gray-100 rounded-xl p-3 mt-6">
-          <div className="text-center">
-            <i className="text-3xl mb-2 font-thin ri-timer-2-line" />
-            <h5 className="text-lg font-medium">10.2</h5>
-            <p className="text-sm text-gray-600">Hours Online</p>
-          </div>
-          <div className="text-center">
-            <i className="text-3xl mb-2 font-thin ri-speed-up-line" />
-            <h5 className="text-lg font-medium">10.2</h5>
-            <p className="text-sm text-gray-600">Hours Online</p>
-          </div>
-          <div className="text-center">
-            <i className="text-3xl mb-2 font-thin ri-booklet-line" />
-            <h5 className="text-lg font-medium">10.2</h5>
-            <p className="text-sm text-gray-600">Hours Online</p>
-          </div>
-        </div>
+        <CaptainDetails />
+      </div>
+      <div
+        className="fixed w-full z-10 bg-white px-3 py-10 pt-12 bottom-0 translate-y-full"
+        ref={ridePopUpRef}
+      >
+        <RidePopup
+          handleActiveModal={handleActiveModal}
+          handleCloseModal={handleCloseModal}
+        />
+      </div>
+      <div
+        className="fixed w-full h-full z-10 bg-white px-3 py-10 pt-12 bottom-0 translate-y-full"
+        ref={confirmRideRef}
+      >
+        <CaptainConfirmedRide
+          handleActiveModal={handleActiveModal}
+          handleCloseModal={handleCloseModal}
+        />
       </div>
     </div>
   );

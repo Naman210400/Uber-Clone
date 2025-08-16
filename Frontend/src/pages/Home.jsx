@@ -7,7 +7,6 @@ import VehiclePanel from "../components/VehiclePanel";
 import ConfirmedRide from "../components/ConfirmedRide";
 import LookingForDriver from "../components/LookingForDriver";
 import WaitingForDriver from "../components/WaitingForDriver";
-import "remixicon/fonts/remixicon.css";
 
 const Home = () => {
   const [book, setBook] = useState(BOOK_RIDE_VALUES);
@@ -111,7 +110,7 @@ const Home = () => {
           )}
           <h4 className="text-2xl font-semibold">Find a trip</h4>
           <form onSubmit={submitHandler}>
-            <div className="line absolute h-16 w-1 top-[40%] left-10 bg-gray-700 rounded-full" />
+            <div className="line absolute h-16 w-1 top-[32%] left-10 bg-gray-700 rounded-full" />
             <input
               type="text"
               placeholder="Add a pick-up location"
