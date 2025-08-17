@@ -42,6 +42,25 @@ const WaitingForDriver = ({ acceptedRide, handleCloseModal }) => {
           <p className="text-sm text-gray-600">Maruti Suzuki Omni</p>
         </div>
       </div>
+      {/* OTP UI */}
+      <div className="flex flex-col items-center justify-center mt-6 mb-6">
+        <h3 className="text-lg font-semibold mb-2 text-gray-700">
+          Confirm your ride with OTP
+        </h3>
+        <div className="flex gap-3">
+          {(acceptedRide.otp || "123456").split("").map((digit, idx) => (
+            <div
+              key={idx}
+              className="w-12 h-16 flex items-center justify-center bg-white border-2 border-gray-300 rounded-xl shadow text-2xl font-bold text-gray-800"
+            >
+              {digit}
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-sm text-gray-500">
+          Share this OTP with your driver
+        </p>
+      </div>
       <div className="flex gap-2 justify-between items-center flex-col">
         <div className="w-full mt-5">
           <div className="flex items-center gap-5 p-3 border-b-2">
@@ -50,7 +69,6 @@ const WaitingForDriver = ({ acceptedRide, handleCloseModal }) => {
               <h3 className="text-lg font-medium">
                 {acceptedRide.pickupLocation}
               </h3>
-              {/* <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p> */}
             </div>
           </div>
           <div className="flex items-center gap-5 p-3 border-b-2">
@@ -59,7 +77,6 @@ const WaitingForDriver = ({ acceptedRide, handleCloseModal }) => {
               <h3 className="text-lg font-medium">
                 {acceptedRide.dropOffLocation}
               </h3>
-              {/* <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p> */}
             </div>
           </div>
           <div className="flex items-center gap-5 p-3 ">

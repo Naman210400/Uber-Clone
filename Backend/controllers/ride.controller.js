@@ -37,11 +37,10 @@ exports.createRide = async (req, res) => {
     const pickupCoordinates = await MapsService.getAddressCoordinates(
       pickupLocation
     );
-
     const captains = await MapsService.getCaptainsByRadius(
       pickupCoordinates.lat,
       pickupCoordinates.lng,
-      5
+      150
     );
 
     if (captains.length > 0) {
@@ -77,7 +76,6 @@ exports.createRide = async (req, res) => {
 };
 
 exports.acceptRide = async (req, res) => {
-  const { otp } = req.body;
   const { rideId } = req.params;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -87,7 +85,6 @@ exports.acceptRide = async (req, res) => {
     const ride = await RideService.acceptRide({
       rideId,
       captainId: req.captain._id,
-      otp,
     });
     if (!ride) {
       return SendFailureResponse(
@@ -97,17 +94,14 @@ exports.acceptRide = async (req, res) => {
       );
     }
 
-    const rideDetailsWithUser = await rideModel
+    const rideDetails = await rideModel
       .findById(rideId)
-      .populate("userId");
-    const rideDetailsWithCaptain = await rideModel
-      .findById(ride._id)
-      .populate("captainId");
-    console.log(rideDetailsWithCaptain, "Ride accepted by captain");
-    console.log(rideDetailsWithUser, "Ride details with user");
+      .populate("userId")
+      .populate("captainId")
+      .select("+otp");
     sendMessage(
-      { event: "ride-accepted", data: rideDetailsWithCaptain },
-      rideDetailsWithUser.userId.socketId
+      { event: "ride-accepted", data: rideDetails },
+      rideDetails.userId.socketId
     );
     return SendSuccessResponse(res, 201, ride, "Ride accepted successfully");
   } catch (error) {
@@ -116,6 +110,92 @@ exports.acceptRide = async (req, res) => {
       res,
       500,
       error.message || "Failed to accept ride"
+    );
+  }
+};
+
+exports.confirmRide = async (req, res) => {
+  const { otp } = req.body;
+  const { rideId } = req.params;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return SendFailureResponse(res, 400, errors.array());
+  }
+  try {
+    const ride = await RideService.confirmRide({
+      rideId,
+      captainId: req.captain._id,
+      otp,
+    });
+    if (!ride) {
+      return SendFailureResponse(res, 404, "Ride not found");
+    }
+    sendMessage({ event: "ride-confirmed", data: ride }, ride.userId.socketId);
+
+    return SendSuccessResponse(res, 201, ride, "Ride confirmed successfully");
+  } catch (error) {
+    console.error("Error confirming ride:", error);
+    return SendFailureResponse(
+      res,
+      500,
+      error.message || "Failed to confirm ride"
+    );
+  }
+};
+
+exports.getRideDetails = async (req, res) => {
+  const { rideId } = req.params;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return SendFailureResponse(res, 400, errors.array());
+  }
+
+  try {
+    const ride = await rideModel
+      .findById(rideId)
+      .populate("userId")
+      .populate("captainId");
+    if (!ride) {
+      return SendFailureResponse(res, 404, "Ride not found");
+    }
+    return SendSuccessResponse(
+      res,
+      200,
+      ride,
+      "Ride details fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching ride details:", error);
+    return SendFailureResponse(
+      res,
+      500,
+      error.message || "Failed to fetch ride details"
+    );
+  }
+};
+
+exports.finishRide = async (req, res) => {
+  const { rideId } = req.params;
+  try {
+    const ride = await RideService.finishRide({
+      rideId,
+      captainId: req.captain._id,
+    });
+    if (!ride) {
+      return SendFailureResponse(
+        res,
+        404,
+        "Ride not found or already finished"
+      );
+    }
+    sendMessage({ event: "ride-finished", data: ride }, ride.userId.socketId);
+    return SendSuccessResponse(res, 200, ride, "Ride finished successfully");
+  } catch (error) {
+    console.error("Error finishing ride:", error);
+    return SendFailureResponse(
+      res,
+      500,
+      error.message || "Failed to finish ride"
     );
   }
 };

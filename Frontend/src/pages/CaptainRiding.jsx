@@ -1,13 +1,44 @@
-import { Link } from "react-router-dom";
-import { CAPTAIN_MODALS } from "../assets/utils/defaultValues";
-import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { API_MODELS, CAPTAIN_MODALS } from "../assets/utils/defaultValues";
+import { useEffect, useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import FinishRide from "../components/FinishRide";
+import apiInstance from "../assets/utils/axiosInstance";
+import { displayErrorToast } from "../assets/utils/validation";
 
 const CaptainRiding = () => {
   const finishRideRef = useRef();
+  const query = new URLSearchParams(window.location.search);
+  const rideId = query.get("rideId");
   const [activeModal, setActiveModal] = useState(CAPTAIN_MODALS.NONE);
+  const [ride, setRide] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchRideDetails = async () => {
+      try {
+        const response = await apiInstance.get(
+          `/${API_MODELS.RIDES}/${rideId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(
+                "UBER_CAPTAIN_TOKEN"
+              )}`,
+            },
+          }
+        );
+        if (response?.data?.data) {
+          setRide(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching ride details:", error);
+      }
+    };
+    if (rideId) {
+      fetchRideDetails();
+    }
+  }, [rideId]);
 
   useGSAP(
     function () {
@@ -29,12 +60,42 @@ const CaptainRiding = () => {
     [activeModal]
   );
 
+  if (!ride) {
+    return <div>Loading...</div>;
+  }
+
   const handleActiveModal = (modal) => {
     setActiveModal(modal);
   };
 
   const handleCloseModal = () => {
     setActiveModal(CAPTAIN_MODALS.NONE);
+  };
+
+  const handleFinishRide = async () => {
+    try {
+      const response = await apiInstance.post(
+        `/${API_MODELS.RIDES}/finish-ride/${ride._id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(
+              "UBER_CAPTAIN_TOKEN"
+            )}`,
+          },
+        }
+      );
+      if (response?.data?.data) {
+        const ride = response.data.data;
+        console.log("Ride finished successfully:", ride);
+        navigate(`/captain-home`);
+      }
+    } catch (error) {
+      console.error("Error confirming ride:", error);
+      displayErrorToast(
+        error?.response?.data?.message || "Failed to confirm ride"
+      );
+    }
   };
   return (
     <div className="h-screen">
@@ -74,7 +135,11 @@ const CaptainRiding = () => {
         ref={finishRideRef}
         className="fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12"
       >
-        <FinishRide handleCloseModal={handleCloseModal} />
+        <FinishRide
+          handleFinishRide={handleFinishRide}
+          ride={ride}
+          handleCloseModal={handleCloseModal}
+        />
       </div>
     </div>
   );

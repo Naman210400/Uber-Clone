@@ -38,7 +38,6 @@ rideRouter.post(
 rideRouter.post(
   "/accept-ride/:rideId",
   [
-    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP is required"),
     (req, res, next) => {
       if (!req.params.rideId || !/^[a-fA-F0-9]{24}$/.test(req.params.rideId)) {
         return res.status(400).json({ errors: [{ msg: "Invalid ride ID" }] });
@@ -49,5 +48,35 @@ rideRouter.post(
   authCaptain,
   RideController.acceptRide
 );
+
+rideRouter.post(
+  "/confirm-ride/:rideId",
+  [
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP is required"),
+    (req, res, next) => {
+      if (!req.params.rideId || !/^[a-fA-F0-9]{24}$/.test(req.params.rideId)) {
+        return res.status(400).json({ errors: [{ msg: "Invalid ride ID" }] });
+      }
+      next();
+    },
+  ],
+  authCaptain,
+  RideController.confirmRide
+);
+
+rideRouter.get(
+  "/:rideId",
+  [
+    (req, res, next) => {
+      if (!req.params.rideId || !/^[a-fA-F0-9]{24}$/.test(req.params.rideId)) {
+        return res.status(400).json({ errors: [{ msg: "Invalid ride ID" }] });
+      }
+      next();
+    },
+  ],
+  RideController.getRideDetails
+);
+
+rideRouter.post("/finish-ride/:rideId", authCaptain, RideController.finishRide);
 
 module.exports = rideRouter;

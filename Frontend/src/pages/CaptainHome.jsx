@@ -1,6 +1,6 @@
 import { useGSAP } from "@gsap/react";
 import { useContext, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { API_MODELS, CAPTAIN_MODALS } from "../assets/utils/defaultValues";
 import CaptainDetails from "../components/CaptainDetails";
 import RidePopup from "../components/RidePopup";
@@ -16,6 +16,8 @@ const CaptainHome = () => {
   const confirmRideRef = useRef();
   const [activeModal, setActiveModal] = useState(CAPTAIN_MODALS.NONE);
 
+  const navigate = useNavigate();
+
   const { captain } = useContext(CaptainDataContext);
   const { socket } = useContext(SocketContext);
   const [newRide, setNewRide] = useState(null);
@@ -24,8 +26,8 @@ const CaptainHome = () => {
     socket.emit("join", { role: "captain", userId: captain._id });
 
     const updateLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
+      if (window.navigator.geolocation) {
+        window.navigator.geolocation.getCurrentPosition((position) => {
           const { latitude, longitude } = position.coords;
           socket.emit("update-captain-location", {
             captainId: captain._id,
@@ -35,7 +37,7 @@ const CaptainHome = () => {
       }
     };
 
-    const locationInterval = setInterval(updateLocation, 5000);
+    const locationInterval = setInterval(updateLocation, 100000);
     return () => clearInterval(locationInterval);
   }, []);
 
@@ -81,11 +83,11 @@ const CaptainHome = () => {
     setActiveModal(CAPTAIN_MODALS.NONE);
   };
 
-  const handleAcceptRide = async (rideId, otp) => {
+  const handleAcceptRide = async (rideId) => {
     try {
       const response = await apiInstance.post(
         `/${API_MODELS.RIDES}/accept-ride/${rideId}`,
-        { otp },
+        {},
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem(
@@ -103,6 +105,32 @@ const CaptainHome = () => {
       console.error("Error accepting ride:", error);
       displayErrorToast(
         error?.response?.data?.message || "Failed to accept ride"
+      );
+    }
+  };
+
+  const handleConfirmRide = async (rideId, otp) => {
+    try {
+      const response = await apiInstance.post(
+        `/${API_MODELS.RIDES}/confirm-ride/${rideId}`,
+        { otp },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(
+              "UBER_CAPTAIN_TOKEN"
+            )}`,
+          },
+        }
+      );
+      if (response?.data?.data) {
+        const ride = response.data.data;
+        console.log("Ride confirmed successfully:", ride);
+        navigate(`/captain-riding?rideId=${ride._id}`);
+      }
+    } catch (error) {
+      console.error("Error confirming ride:", error);
+      displayErrorToast(
+        error?.response?.data?.message || "Failed to confirm ride"
       );
     }
   };
@@ -139,7 +167,7 @@ const CaptainHome = () => {
         {activeModal === CAPTAIN_MODALS.NEW_RIDE && (
           <RidePopup
             newRide={newRide}
-            handleActiveModal={handleActiveModal}
+            handleAcceptRide={handleAcceptRide}
             handleCloseModal={handleCloseModal}
           />
         )}
@@ -151,7 +179,7 @@ const CaptainHome = () => {
         {activeModal === CAPTAIN_MODALS.CONFIRM_RIDE && (
           <CaptainConfirmedRide
             newRide={newRide}
-            handleAcceptRide={handleAcceptRide}
+            handleConfirmRide={handleConfirmRide}
             handleCloseModal={handleCloseModal}
           />
         )}

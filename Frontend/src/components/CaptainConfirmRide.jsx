@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const CaptainConfirmedRide = ({
   newRide,
-  handleAcceptRide,
+  handleConfirmRide,
   handleCloseModal,
 }) => {
   const [otp, setOtp] = useState(null);
@@ -11,7 +11,7 @@ const CaptainConfirmedRide = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle OTP submission logic here
-    handleAcceptRide(newRide._id, otp);
+    handleConfirmRide(newRide._id, otp);
   };
   return (
     <div>

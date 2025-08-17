@@ -15,6 +15,7 @@ import apiInstance from "../assets/utils/axiosInstance";
 import { SocketContext } from "../context/SocketContext";
 import { UserDataContext } from "../context/UserContext";
 import { displayErrorToast } from "../assets/utils/validation";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const [book, setBook] = useState(BOOK_RIDE_VALUES);
@@ -29,6 +30,7 @@ const Home = () => {
 
   const { user } = useContext(UserDataContext);
   const { socket } = useContext(SocketContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     socket.emit("join", { role: "user", userId: user._id });
@@ -173,6 +175,13 @@ const Home = () => {
     console.log("Ride accepted:", ride);
     setAcceptedRide(ride);
     setActiveModal(USER_MODALS.WAITING_FOR_DRIVER);
+  });
+
+  socket.on("ride-confirmed", (ride) => {
+    console.log("Ride confirmed:", ride);
+    setAcceptedRide(null);
+    setActiveModal(USER_MODALS.NONE);
+    navigate(`/riding?rideId=${ride._id}`);
   });
   return (
     <div className="h-screen relative overflow-hidden">

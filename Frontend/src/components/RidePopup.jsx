@@ -1,6 +1,4 @@
-import { CAPTAIN_MODALS } from "../assets/utils/defaultValues";
-
-const RidePopup = ({ handleActiveModal, newRide, handleCloseModal }) => {
+const RidePopup = ({ newRide, handleAcceptRide, handleCloseModal }) => {
   return (
     <div>
       <h5
@@ -56,7 +54,7 @@ const RidePopup = ({ handleActiveModal, newRide, handleCloseModal }) => {
             Ignore
           </button>
           <button
-            onClick={() => handleActiveModal(CAPTAIN_MODALS.CONFIRM_RIDE)}
+            onClick={() => handleAcceptRide(newRide._id)}
             className="w-full bg-green-600 rounded-lg text-white font-semibold p-2"
           >
             Accept

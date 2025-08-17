@@ -1,6 +1,55 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import apiInstance from "../assets/utils/axiosInstance";
+import { useContext, useEffect, useState } from "react";
+import { API_MODELS } from "../assets/utils/defaultValues";
+import { SocketContext } from "../context/SocketContext";
+import { UserDataContext } from "../context/UserContext";
 const Riding = () => {
+  const query = new URLSearchParams(window.location.search);
+  const rideId = query.get("rideId");
+  const [ride, setRide] = useState(null);
+  const navigate = useNavigate();
+  const { socket } = useContext(SocketContext);
+  const { user } = useContext(UserDataContext);
+
+  useEffect(() => {
+    socket.emit("join", { role: "user", userId: user._id });
+  }, []);
+
+  useEffect(() => {
+    const fetchRideDetails = async () => {
+      try {
+        const response = await apiInstance.get(
+          `/${API_MODELS.RIDES}/${rideId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(
+                "UBER_USER_TOKEN"
+              )}`,
+            },
+          }
+        );
+        if (response?.data?.data) {
+          setRide(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching ride details:", error);
+      }
+    };
+    if (rideId) {
+      fetchRideDetails();
+    }
+  }, [rideId]);
+
+  if (!ride) {
+    return <div>Loading...</div>;
+  }
+
+  socket.on("ride-finished", (ride) => {
+    console.log("Ride finished:", ride);
+    navigate("/home");
+  });
+
   return (
     <div className="h-screen">
       <Link
@@ -24,8 +73,13 @@ const Riding = () => {
             alt=""
           />
           <div className="text-right">
-            <h2 className="text-lg font-medium">Naman</h2>
-            <h4 className="text-xl font-semibold -mt-1 -mb-1">GJ 01 AB 1234</h4>
+            <h2 className="text-lg font-medium">
+              {ride.captainId.fullname.firstname}{" "}
+              {ride.captainId.fullname.lastname}
+            </h2>
+            <h4 className="text-xl font-semibold -mt-1 -mb-1">
+              {ride.captainId.vehicle.plate}
+            </h4>
             <p className="text-sm text-gray-600">Maruti Suzuki Omni</p>
           </div>
         </div>
@@ -34,14 +88,14 @@ const Riding = () => {
             <div className="flex items-center gap-5 p-3 border-b-2">
               <i className="text-lg ri-map-pin-2-fill" />
               <div>
-                <h3 className="text-lg font-medium">562/11-A</h3>
-                <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p>
+                <h3 className="text-lg font-medium">{ride.dropOffLocation}</h3>
+                {/* <p className="text-sm -mt-1 text-gray-600">Ahmedabad, India</p> */}
               </div>
             </div>
             <div className="flex items-center gap-5 p-3 ">
               <i className="text-lg ri-currency-line" />
               <div>
-                <h3 className="text-lg font-medium">$12</h3>
+                <h3 className="text-lg font-medium">₹{ride.fare}</h3>
                 <p className="text-sm -mt-1 text-gray-600">Cash</p>
               </div>
             </div>
