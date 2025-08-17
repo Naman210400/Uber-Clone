@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const SplashScreen = () => {
   return (
     <div>
-      <div className="bg-[url('/images/home-background.jpg')] bg-no-repeat bg-contain bg-top h-screen pt-8 flex justify-between flex-col w-full">
+      <div className="bg-[url('public/images/home-background.jpg')] bg-no-repeat bg-contain bg-top h-screen pt-8 flex justify-between flex-col w-full">
         <img
           className="w-16 ml-8"
           src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png"
